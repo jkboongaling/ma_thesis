@@ -61,9 +61,8 @@ fn1 <- function(df, list) {
   x <- list[[i]]
   y <- df$ndeaths[2:25]
   # Remove NA values
+  # Replace zero values with small num to avoid errors in the model
   y <- y[!is.na(y)] + 1e-10
-  # Replace zero values with small number to avoid errors in the model
-  # y[y == 0] <- 1e-10
   # The pclm function performs the "ungrouping"
   M1 <- pclm(x, y[1:length(x)], 101 - max(x))
   z <- M1$fitted
@@ -81,7 +80,18 @@ fn1 <- function(df, list) {
     b <- round(sum(z), 1)
     c <- round(b - a, 1)
     d <- round(100 * c / a, 1)
+    # If c and d is large, redo pclm without adjustments
+    if (!is.nan(c) & (c > 10 & d > 5)) {
+      y <- df$ndeaths[2:25]
+      y <- y[!is.na(y)]
+      M1 <- pclm(x, y[1:length(x)], 101 - max(x))
+      z <- M1$fitted
+      b <- round(sum(z), 1)
+      c <- round(b - a, 1)
+      d <- round(100 * c / a, 1)
+    }
   }
+  # Output
   group <- paste(cur_group(), collapse = " ")
   print(paste(group, unique(df$List), a, b, c, d, collapse = " "))
   # Create a data frame for the current iteration
@@ -120,7 +130,7 @@ ph2 <-
   group_by(year, sex, age) %>%
   mutate(total = sum(n, na.rm = TRUE), px = n / total)
 
-write_csv(ph2, "./out/data/who_mdb_ph2.csv")
+write_csv(ph2, "../out/data/who_mdb_ph2.csv")
 
 end <- proc.time()
 elapsed <- end - start
