@@ -22,5 +22,3 @@ use "who_mdb.dta", clear
 keep if Country == 3300 & List == "09B"
 
 icd9 check Cause, generate(prob2) list
-
-

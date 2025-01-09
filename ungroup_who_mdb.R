@@ -22,6 +22,7 @@ xlist <- list(x0, x1, x2, x3, x4, x5)
 ph <-
   raw %>%
   # PH only, include causes with nonzero deaths, 2006+ data will be from CRVS
+  # Move this to extract_who_mdb.R
   filter(Country == 3300 & Deaths1 != 0 & Year < 2006) %>%
   group_by(Year, Sex, Cause) %>%
   pivot_longer(

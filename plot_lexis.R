@@ -235,4 +235,5 @@ p3 <- pl + ylab("Proportion on all deaths\n")
 
 p1 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
 p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
-p1 | (p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6))
+p4 <- p1 | (p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6))
+p4
