@@ -3,42 +3,56 @@ library(haven)
 library(colorspace)
 library(patchwork)
 
-options(scipen = 100000, digits = 4)
-
 # Extract data
-cod <- read_dta("../out/data/cod.dta")
+df1 <- read_dta("../out/data/cod.dta")
+df2 <- read_dta("../out/data/px_mdb_104_cod5.dta")
+df3 <- read_dta("../out/data/px_mdb_09B_cod5.dta")
 
 # Retain labels as factors
-cod <-
-  cod %>%
+df1 <-
+  df1 %>%
+  select(year, sex, age, cod5, n, total, px) %>% 
   mutate(sex = as_factor(sex),
-         cod5 = as_factor(cod5),
-         cod10 = as_factor(cod10))
+         cod5 = as_factor(cod5))
+
+df2 <-
+  df2 %>%
+  mutate(sex = as_factor(sex),
+         cod5 = as_factor(cod5))
+
+levels(df2$sex) <- c("Male", "Female")
+
+df3 <-
+  df3 %>%
+  mutate(sex = as_factor(sex),
+         cod5 = as_factor(cod5))
+
+levels(df3$sex) <- c("Male", "Female")
+levels(df3$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
 
 # Check
-levels(cod$sex)
-levels(cod$cod5)
-levels(cod$cod10)
+levels(df1$sex)
+levels(df1$cod5)
+levels(df2$sex)
+levels(df2$cod5)
+levels(df3$sex)
+levels(df3$cod5)
+
+# Combine all data
+cod <- rbind(df1, df2, df3)
 
 # Qualitative Sequential Scheme Lexis Surface
 # Based on R codes by Schöley and Willekens
 # https://github.com/jschoeley/viscomplexis
 
-# COD groups
-# The groups defined by cod5 and cod10 were coded in Stata
+# Just to ensure everything is summed up by COD analysis groups
 cod5 <-
   cod %>%
   group_by(year, sex, age, cod5) %>%
   summarise(px5 = sum(px))
 
-cod10 <-
-  cod %>%
-  group_by(year, sex, age, cod10) %>%
-  summarise(px10 = sum(px))
-
 # Save COD groups to csv
 write_csv(cod5, "../out/data/cod5.csv")
-write_csv(cod10, "../out/data/cod10.csv")
 
 # Modal CODs
 cod5_mode <-
@@ -47,14 +61,7 @@ cod5_mode <-
   filter(px5 == max(px5)) %>%
   ungroup()
 
-cod10_mode <-
-  cod10 %>%
-  group_by(year, sex, age) %>%
-  filter(px10 == max(px10)) %>%
-  ungroup()
-
 summary(cod5_mode)
-summary(cod10_mode)
 
 # Define base colors for plot
 
@@ -66,19 +73,6 @@ cpal5 <- c(
   "Infection"   = "#8C564B",
   "External"    = "#B71C1C",
   "Others"      = "#0D47A1"
-)
-
-cpal10 <- c(
-  "Infectious diseases"           = "#1B5E20",
-  "Cancer"                        = "#0D47A1",
-  "Diabetes"                      = "#B71C1C",
-  "Ischemic heart disease"        = "#8E24AA",
-  "Stroke"                        = "#4527A0",
-  "Other cardiovascular diseases" = "#00796B",
-  "Respiratory diseases"          = "#F57F17",
-  "Suicide"                       = "#8C564B",
-  "Injuries"                      = "#212121",
-  "Others"                        = "#FBC02D"
 )
 
 breaks <- c(0.2, 0.4, 0.6, 0.8, 1)

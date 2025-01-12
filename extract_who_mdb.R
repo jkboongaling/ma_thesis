@@ -25,6 +25,22 @@ all <- lapply(filenames_list, function(filename) {
 
 df <- do.call(rbind.data.frame, all)
 
+# PH only, include causes with nonzero deaths, 2006+ data will be from CRVS
+ph <-
+  df %>%
+  filter(Country == 3300 & Deaths1 != 0 & Year < 2006) %>%
+  group_by(Year, Sex, Cause) %>%
+  pivot_longer(
+    cols = starts_with("Deaths"),
+    names_to = c("agegrp"),
+    names_prefix = "Deaths",
+    values_to = "ndeaths"
+  ) %>%
+  ungroup() %>%
+  select(-c(starts_with("IM_"), Country, Admin1, SubDiv)) %>%
+  mutate(agegrp = as.numeric(agegrp), Frmat = as.numeric(Frmat)) %>%
+  arrange(Year, Sex, Cause, Frmat, agegrp)
+
 # Write output
-write_csv(df, merged_csv)
-write_dta(df, merged_dta)
+write_csv(ph, merged_csv)
+write_dta(ph, merged_dta)
