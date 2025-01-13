@@ -7,6 +7,8 @@ library(patchwork)
 df1 <- read_dta("../out/data/cod.dta")
 df2 <- read_dta("../out/data/px_mdb_104_cod5.dta")
 df3 <- read_dta("../out/data/px_mdb_09B_cod5.dta")
+df4 <- read_dta("../out/data/px_mdb_08A_cod5.dta")
+df5 <- read_dta("../out/data/px_mdb_07A_cod5.dta")
 
 # Retain labels as factors
 df1 <-
@@ -30,6 +32,22 @@ df3 <-
 levels(df3$sex) <- c("Male", "Female")
 levels(df3$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
 
+df4 <-
+  df4 %>%
+  mutate(sex = as_factor(sex),
+         cod5 = as_factor(cod5))
+
+levels(df4$sex) <- c("Male", "Female")
+levels(df4$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
+
+df5 <-
+  df5 %>%
+  mutate(sex = as_factor(sex),
+         cod5 = as_factor(cod5))
+
+levels(df5$sex) <- c("Male", "Female")
+levels(df5$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
+
 # Check
 levels(df1$sex)
 levels(df1$cod5)
@@ -37,9 +55,13 @@ levels(df2$sex)
 levels(df2$cod5)
 levels(df3$sex)
 levels(df3$cod5)
+levels(df4$sex)
+levels(df4$cod5)
+levels(df5$sex)
+levels(df5$cod5)
 
 # Combine all data
-cod <- rbind(df1, df2, df3)
+cod <- rbind(df1, df2, df3, df4, df5)
 
 # Qualitative Sequential Scheme Lexis Surface
 # Based on R codes by Schöley and Willekens
@@ -102,6 +124,7 @@ cod5_mode_mix <-
     base_col = cpal5[cod5],
     px_disc = cut(px5, breaks, labels = FALSE, include.lowest = TRUE),
     mix_col = MixWithWhite(.rgb = base_col, .alpha = alphas[px_disc])
+    # mix_col = MixWithWhite(.rgb = base_col, .alpha = 0.7)
   )
 
 # Males

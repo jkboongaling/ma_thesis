@@ -3,21 +3,21 @@ library(readxl)
 source("fn_ungroup.R")
 
 # Extract data
-df1 <- read_csv("../out/data/who_mdb_09B.csv")
+df1 <- read_csv("../out/data/who_mdb_08A.csv")
 
 # Lookup file
 lkup <- read_excel("../docs/Data Description Table.xlsx",
-                   sheet = "09B") 
+                   sheet = "08A") 
 
-colnames(lkup)[1] <- "icd9"
+colnames(lkup)[1] <- "icd8"
 
 lkup <-
   lkup %>% 
-  select(icd9, cod5)
+  select(icd8, cod5)
 
 # Lookup COD analysis group
 df2 <-
-  left_join(df1, lkup, by = join_by(Cause == icd9)) %>% 
+  left_join(df1, lkup, by = join_by(Cause == icd8)) %>% 
   filter(cod5 != 0) %>% 
   group_by(Year, Sex, cod5, agegrp) %>%
   summarize(ndeaths = sum(ndeaths)) %>% 
@@ -28,7 +28,7 @@ df2 <-
 ph1 <-
   df2 %>%
   group_by(Year, Sex, cod5) %>%
-  summarise(n = list(fn1(pick(ndeaths), 1, xlist)), .groups = "drop")
+  summarise(n = list(fn1(pick(ndeaths), 5, xlist)), .groups = "drop")
 
 write_csv(check_df, "../out/data/check_df.csv")
 
@@ -42,4 +42,4 @@ ph2 <-
   group_by(year, sex, age) %>%
   mutate(total = sum(n, na.rm = TRUE), px = n / total)
 
-write_dta(ph2, "../out/data/px_mdb_09B_cod5.dta")
+write_dta(ph2, "../out/data/px_mdb_08A_cod5.dta")
