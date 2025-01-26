@@ -34,7 +34,7 @@ mlt <-
     xlsx_m,
     sheet = .x,
     range = cell_limits(c(18, 11), c(NA, NA)),
-    col_names = c("year", "x", "n", "mx", "qx", "px", "lx", 
+    col_names = c("year", "age", "n", "mx", "qx", "px", "lx", 
                   "dx", "Lx", "Sx", "Tx", "ex", "ax"),
     na = c("", "..."))
     # Combine
@@ -42,7 +42,8 @@ mlt <-
     return(df)
     }) %>%
   bind_rows() %>% 
-  mutate(sex = 1, .before = x)
+  mutate(sex = 1, .before = age) %>% 
+  select(-n)
 
 # Extract data for females
 flt <-
@@ -61,7 +62,7 @@ flt <-
       xlsx_f,
       sheet = .x,
       range = cell_limits(c(18, 11), c(NA, NA)),
-      col_names = c("year", "x", "n", "mx", "qx", "px", "lx", 
+      col_names = c("year", "age", "n", "mx", "qx", "px", "lx", 
                     "dx", "Lx", "Sx", "Tx", "ex", "ax"),
       na = c("", "..."))
     # Combine
@@ -69,11 +70,13 @@ flt <-
     return(df)
   }) %>%
   bind_rows() %>% 
-  mutate(sex = 2,  .before = x)
+  mutate(sex = 2,  .before = age) %>% 
+  select(-n)
 
-# Combine sexes and filter PH and SEA
+# Combine both sexes, filter PH and SEA, and sort
 all <- rbind(mlt, flt) %>%
-  filter(loc %in% c(608, 920))
+  filter(loc %in% c(608, 920)) %>% 
+  arrange(loc, sex, year, age)
 
 # Write output
 write_csv(all, merged_csv)
