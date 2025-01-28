@@ -2,7 +2,10 @@ library(tidyverse)
 library(readxl)
 library(haven)
 library(ungroup)
+library(DemoTools)
 source("fn_life_table.R")
+
+options(scipen = 100000, digits = 4)
 
 # Identify working directory
 getwd()
@@ -62,4 +65,33 @@ df1 <-
 combinations <- df1 %>%
   distinct(loc, year, sex)
 
-# Create LifeTableQx function
+# From DemoTools
+# Apply lt_single_qx
+life_table_results <- pmap(combinations, function(loc, year, sex) {
+  print(paste("Computing LTs for:", loc, year, sex, "...", collapse = " "))
+  qx_values <- df1 %>%
+    filter(loc == !!loc, year == !!year, sex == !!sex) %>%
+    pull(qx)
+  print(length(qx_values))
+  # Check if there are valid qx values (non-empty)
+  if (length(qx_values) > 0) {
+    result <- lt_single_qx(nqx = qx_values, Age = 0:101, sex = if_else(sex == 1, "m", "f"))
+    result$loc <- loc
+    result$year <- year
+    result$sex <- sex
+    return(result)
+  } else {
+    return(NULL)
+  }
+})
+
+# Combine the results into a single dataframe, excluding NULL results
+df <- bind_rows(life_table_results) %>% 
+  as_tibble() %>% 
+  select(loc, year, sex, everything()) %>% 
+  rename(age = Age, mx = nMx, qx = nqx, dx = ndx, Lx = nLx, ax = nAx) %>% 
+  mutate(px = 1- qx, .before = lx) %>% 
+  select(-ax, everything(), ax, -AgeInt)
+  
+# Write output
+write_csv(df, "../out/data/gbd_lt_1x1_demotools.csv")
