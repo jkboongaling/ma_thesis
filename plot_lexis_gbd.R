@@ -4,82 +4,38 @@ library(colorspace)
 library(patchwork)
 
 # Extract data
-df1 <- read_dta("../out/data/cod.dta")
-df2 <- read_dta("../out/data/px_mdb_104_cod5.dta")
-df3 <- read_dta("../out/data/px_mdb_09B_cod5.dta")
-df4 <- read_dta("../out/data/px_mdb_08A_cod5.dta")
-df5 <- read_dta("../out/data/px_mdb_07A_cod5.dta")
+df <- read_csv("../out/data/gbd_cod5.csv")
 
 # Retain labels as factors
-df1 <-
-  df1 %>%
-  select(year, sex, age, cod5, n, total, px) %>% 
-  mutate(sex = as_factor(sex),
+df <-
+  df %>%
+  select(loc, year, sex, age, cod5, n, total, px) %>% 
+  mutate(loc = as_factor(loc),
+         sex = as_factor(sex),
          cod5 = as_factor(cod5))
 
-df2 <-
-  df2 %>%
-  mutate(sex = as_factor(sex),
-         cod5 = as_factor(cod5))
-
-levels(df2$sex) <- c("Male", "Female")
-
-df3 <-
-  df3 %>%
-  mutate(sex = as_factor(sex),
-         cod5 = as_factor(cod5))
-
-levels(df3$sex) <- c("Male", "Female")
-levels(df3$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
-
-df4 <-
-  df4 %>%
-  mutate(sex = as_factor(sex),
-         cod5 = as_factor(cod5))
-
-levels(df4$sex) <- c("Male", "Female")
-levels(df4$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
-
-df5 <-
-  df5 %>%
-  mutate(sex = as_factor(sex),
-         cod5 = as_factor(cod5))
-
-levels(df5$sex) <- c("Male", "Female")
-levels(df5$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
+levels(df$loc) <- c("SEA", "PH")
+levels(df$sex) <- c("Male", "Female")
+levels(df$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
 
 # Check
-levels(df1$sex)
-levels(df1$cod5)
-levels(df2$sex)
-levels(df2$cod5)
-levels(df3$sex)
-levels(df3$cod5)
-levels(df4$sex)
-levels(df4$cod5)
-levels(df5$sex)
-levels(df5$cod5)
-
-# Combine all data
-cod <- rbind(df1, df2, df3, df4, df5)
-
-# Qualitative Sequential Scheme Lexis Surface
-# Based on R codes by Schöley and Willekens
-# https://github.com/jschoeley/viscomplexis
+levels(df$loc)
+levels(df$sex)
+levels(df$cod5)
 
 # Just to ensure everything is summed up by COD analysis groups
 cod5 <-
-  cod %>%
-  group_by(year, sex, age, cod5) %>%
+  df %>%
+  group_by(loc, year, sex, age, cod5) %>%
   summarise(px5 = sum(px))
 
 # Save COD groups to csv
-write_csv(cod5, "../out/data/cod5.csv")
+write_csv(cod5, "../out/data/cod5_gbd.csv")
 
 # Modal CODs
 cod5_mode <-
   cod5 %>%
-  group_by(year, sex, age) %>%
+  group_by(loc, year, sex, age) %>%
   filter(px5 == max(px5)) %>%
   ungroup()
 
@@ -130,7 +86,7 @@ cod5_mode_mix <-
 # Males
 pm <-
   cod5_mode_mix %>%
-  filter(sex == "Male") %>%
+  filter(sex == "Male" & loc == "PH") %>%
   # Align tiles with grid
   mutate(year = year + 0.5, age = age + 0.5) %>%
   ggplot() +
@@ -153,11 +109,6 @@ pm <-
     intercept = seq(-100, 100, 10) - 1960,
     alpha = 0.2,
     lty = "dotted") +
-  geom_vline(xintercept = c(2006),
-             lty = "dashed",
-             color = "red") +
-  annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "red", vjust = 0) +
-  annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "red", vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -174,7 +125,7 @@ pm <-
 # Females
 pf <-
   cod5_mode_mix %>%
-  filter(sex == "Female") %>%
+  filter(sex == "Female" & loc == "PH") %>%
   # Align tiles with grid
   mutate(year = year + 0.5, age = age + 0.5) %>%
   ggplot() +
@@ -197,11 +148,6 @@ pf <-
     intercept = seq(-100, 100, 10) - 1960,
     alpha = 0.2,
     lty = "dotted") +
-  geom_vline(xintercept = c(2006),
-             lty = "dashed",
-             color = "red") +
-  annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "red", vjust = 0) +
-  annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "red", vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -263,5 +209,5 @@ p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
 p4 <- p1 | (p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)) 
 p4 
 
-ggsave("../out/fig/ph_lexis_modal_deaths_vr.png", p4, width = 1080, height = 600, 
+ggsave("../out/fig/ph_lexis_modal_deaths_gbd.png", p4, width = 1080, height = 600, 
        units = "px", dpi = 96)

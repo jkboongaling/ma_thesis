@@ -9,6 +9,7 @@ df2 <- read_dta("../out/data/px_mdb_104_cod5.dta")
 df3 <- read_dta("../out/data/px_mdb_09B_cod5.dta")
 df4 <- read_dta("../out/data/px_mdb_08A_cod5.dta")
 df5 <- read_dta("../out/data/px_mdb_07A_cod5.dta")
+df6 <- read_csv("../out/data/gbd_cod5.csv")
 
 # Retain labels as factors
 df1 <-
@@ -34,6 +35,7 @@ levels(df3$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Other
 
 df4 <-
   df4 %>%
+  filter(year != 1981) %>% 
   mutate(sex = as_factor(sex),
          cod5 = as_factor(cod5))
 
@@ -48,6 +50,16 @@ df5 <-
 levels(df5$sex) <- c("Male", "Female")
 levels(df5$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
 
+df6 <-
+  df6 %>%
+  filter(loc == 16 & year %in% c(seq(1980, 1991), 2004, 2005)) %>% 
+  select(year, sex, age, cod5, n, total, px) %>% 
+  mutate(sex = as_factor(sex),
+         cod5 = as_factor(cod5))
+
+levels(df6$sex) <- c("Male", "Female")
+levels(df6$cod5) <- c("Circulatory", "Neoplasm", "Infection", "External", "Others")
+
 # Check
 levels(df1$sex)
 levels(df1$cod5)
@@ -59,9 +71,11 @@ levels(df4$sex)
 levels(df4$cod5)
 levels(df5$sex)
 levels(df5$cod5)
+levels(df6$sex)
+levels(df6$cod5)
 
 # Combine all data
-cod <- rbind(df1, df2, df3, df4, df5)
+cod <- rbind(df1, df2, df3, df4, df5, df6)
 
 # Qualitative Sequential Scheme Lexis Surface
 # Based on R codes by Schöley and Willekens
@@ -74,7 +88,7 @@ cod5 <-
   summarise(px5 = sum(px))
 
 # Save COD groups to csv
-write_csv(cod5, "../out/data/cod5.csv")
+# write_csv(cod5, "../out/data/cod5.csv")
 
 # Modal CODs
 cod5_mode <-
@@ -123,8 +137,8 @@ cod5_mode_mix <-
   mutate(
     base_col = cpal5[cod5],
     px_disc = cut(px5, breaks, labels = FALSE, include.lowest = TRUE),
-    mix_col = MixWithWhite(.rgb = base_col, .alpha = alphas[px_disc])
-    # mix_col = MixWithWhite(.rgb = base_col, .alpha = 0.7)
+    # mix_col = MixWithWhite(.rgb = base_col, .alpha = alphas[px_disc])
+    mix_col = MixWithWhite(.rgb = base_col, .alpha = 0.7)
   )
 
 # Males
@@ -153,11 +167,9 @@ pm <-
     intercept = seq(-100, 100, 10) - 1960,
     alpha = 0.2,
     lty = "dotted") +
-  geom_vline(xintercept = c(2006),
+  geom_vline(xintercept = c(1979, 1992, 2004, 2006),
              lty = "dashed",
              color = "red") +
-  annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "red", vjust = 0) +
-  annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "red", vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -197,11 +209,9 @@ pf <-
     intercept = seq(-100, 100, 10) - 1960,
     alpha = 0.2,
     lty = "dotted") +
-  geom_vline(xintercept = c(2006),
+  geom_vline(xintercept = c(1979, 1992, 2004, 2006),
              lty = "dashed",
              color = "red") +
-  annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "red", vjust = 0) +
-  annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "red", vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -263,5 +273,5 @@ p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
 p4 <- p1 | (p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)) 
 p4 
 
-ggsave("../out/fig/ph_lexis_modal_deaths_vr.png", p4, width = 1080, height = 600, 
+ggsave("../out/fig/ph_lexis_modal_deaths_all_simple.png", p4, width = 1080, height = 600, 
        units = "px", dpi = 96)

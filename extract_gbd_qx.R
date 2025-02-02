@@ -75,7 +75,7 @@ life_table_results <- pmap(combinations, function(loc, year, sex) {
   print(length(qx_values))
   # Check if there are valid qx values (non-empty)
   if (length(qx_values) > 0) {
-    result <- lt_single_qx(nqx = qx_values, Age = 0:101, sex = if_else(sex == 1, "m", "f"))
+    result <- lt_single_qx(nqx = qx_values, Age = 0:101, a0rule = "ak", sex = if_else(sex == 1, "m", "f"))
     result$loc <- loc
     result$year <- year
     result$sex <- sex
