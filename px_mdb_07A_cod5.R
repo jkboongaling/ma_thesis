@@ -35,7 +35,7 @@ write_csv(check_df, "../out/data/check_df.csv")
 ph2 <-
   ph1 %>%
   unnest(n) %>%
-  mutate(age = rep(0:98, length.out = n())) %>%
+  mutate(age = rep(0:100, length.out = n())) %>%
   rename(year = Year, sex = Sex) %>%
   select(-c(Frmat)) %>% 
   group_by(year, sex, age, cod5) %>% 

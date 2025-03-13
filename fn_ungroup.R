@@ -33,7 +33,7 @@ fn1 <- function(df, fmt, list) {
   # Add 1e-10 to avoid errors due to zero values
   y <- y[!is.na(y)] + 1e-10
   # The pclm function performs the "ungrouping"
-  M1 <- pclm(x, y[1:length(x)], 99 - max(x))
+  M1 <- pclm(x, y[1:length(x)], 101 - max(x))
   z <- M1$fitted
   # Check
   a <- sum(df$ndeaths[2:25], na.rm = TRUE)
