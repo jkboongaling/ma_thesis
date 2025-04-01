@@ -26,14 +26,16 @@ col_list <- c(
   "sex",
   "age",
   "cause_of_death_3digit",
-  "icd_code"
+  "icd_code",
+  "icd_code_3d"
 )
 
 # List how to rename columns
 rn_map <- c(
   year = "date_of_death_year",
   cod = "cause_of_death_3digit",
-  cod = "icd_code"
+  cod = "icd_code",
+  cod = "icd_code_3d"
 )
 
 # Extract data from all files
