@@ -263,5 +263,5 @@ p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
 p4 <- p1 | (p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)) 
 p4 
 
-ggsave("../out/fig/ph_lexis_modal_deaths_vr.png", p4, width = 1080, height = 600, 
+ggsave("../out/fig/PH_Lexis_cod_px.png", p4, width = 1080, height = 600, 
        units = "px", dpi = 96)

@@ -15,7 +15,7 @@ options(scipen = 100000, digits = 4)
 # LE Decomposition (Arriaga)
 
 # Inputs
-yr1 <- 1993
+yr1 <- 2021
 yr2 <- 2023
 s1  <- "Female"
 s2  <- "f"
@@ -196,7 +196,8 @@ ggplot() +
   # geom_hline(yintercept = 0, lty = "dotted", color = "red") +
   scale_fill_brewer(type = "qual", palette = 7) +
   scale_x_continuous(breaks = seq(0, 100, 10)) +
-  scale_y_continuous(breaks = seq(0, 1.5, 0.1)) +
+  scale_y_continuous(breaks = seq(-0.1, 1.1, 0.1), limits = c(-0.1, 1.1)) +
+  # scale_y_continuous(breaks = seq(-0.1, 0.7, 0.1), limits = c(-0.1, 0.7)) +
   theme_bw() +
   theme(
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
@@ -220,7 +221,7 @@ ggplot() +
   )
 
 ggsave(
-  paste0("../out/fig/PH_", s1, "_", yr1, "-", yr2, ".png"),
+  paste0("../out/fig/PH_", s1, "_", yr1, "-", yr2, "_Decomposition.png"),
   width = 1080,
   height = 600,
   units = "px",
@@ -241,22 +242,22 @@ ex_diff <-
   ((lt1$dx / 100000 * lt2$dx / 100000) ^ 0.5) *
   (lt1$ex + lt1$ex) / 2
 
-ggplot() +
-  geom_col(aes(x = 0:100, y = ex_diff), fill = "blue") +
-  scale_x_continuous(breaks = seq(0, 100, 10)) +
-  theme_bw() +
-  labs(
-    title = paste0(
-      "Age-decomposition of the difference in PH ",
-      str_to_lower(s1),
-      " life expectancy, ",
-      yr1,
-      "-",
-      yr2
-    ),
-    x = "Age",
-    y = "Contributions"
-  )
+# ggplot() +
+#   geom_col(aes(x = 0:100, y = ex_diff), fill = "blue") +
+#   scale_x_continuous(breaks = seq(0, 100, 10)) +
+#   theme_bw() +
+#   labs(
+#     title = paste0(
+#       "Age-decomposition of the difference in PH ",
+#       str_to_lower(s1),
+#       " life expectancy, ",
+#       yr1,
+#       "-",
+#       yr2
+#     ),
+#     x = "Age",
+#     y = "Contributions"
+#   )
 
 # e-dagger
 tp  <- yr2 - yr1
@@ -292,7 +293,7 @@ covar <- sum((rho - sum(rho * fx)) * (ex - edag[1]) * fx)
 gap2  <- main + covar
 table <-
   matrix(round(c(
-    lt2$ex[1], lt1$ex[1], gap, sum(rho * fx), edag[1], main, covar, gap2), 3), ncol = 1)
+    lt2$ex[1], lt1$ex[1], gap, sum(rho * fx), edag[1], main, covar, gap2), 4), ncol = 1)
 
 row.names(table) <- c(paste0("Life expectancy at ", yr2),
                       paste0("Life expectancy at ", yr1),
@@ -309,9 +310,11 @@ ggplot() +
   geom_line(mapping = aes(x = 0:100, y = rho, color = "Mortality Improvements")) +
   # geom_smooth(
   #   mapping = aes(x = 0:100, y = rho, color = "Mortality Improvements"),
-  #   se = F, linetype = 2, show.legend = F) + 
-  geom_line(mapping = aes(x = 0:100, y = ex / 1000, color = "Life expectancy")) +
-  scale_y_continuous(sec.axis = sec_axis(transform =  ~ . * 1000, name = "Life expectancy")) +
+  #   se = F, linetype = 2, show.legend = F) +
+  geom_line(mapping = aes(x = 0:100, y = (ex - 50) / 125, color = "Life expectancy")) +
+  scale_y_continuous(sec.axis = sec_axis(transform = ~ (125 * . + 50), name = "Life expectancy"),
+                     breaks = seq(-0.4, 0.4, 0.1),
+                     limits = c(-0.4, 0.4)) +
   scale_colour_manual(values = c("blue", "red")) +
   theme_bw() +
   theme(
@@ -319,10 +322,27 @@ ggplot() +
     axis.text = element_text(colour = "black"),
     axis.text.y = element_text(margin = margin(r = 10)),
     axis.text.x = element_text(margin = margin(t = 10)),
-    plot.margin = margin(5)) +
+    axis.ticks = element_blank(),
+    plot.margin = margin(5),
+    legend.position = "bottom") +
   labs(
-    title = paste0("Life expectancy by age and mortality improvements, PH ", s1, "s"),
+    title = paste0(
+      "Life expectancy and mortality improvements by age, PH ",
+      s1,
+      "s, ",
+      yr1,
+      "-",
+      yr2
+    ),
     x = "Age",
     y = "Mortality Improvements",
-    colour = "") +
-  theme(legend.position = "bottom")
+    colour = ""
+  )
+
+ggsave(
+  paste0("../out/fig/PH_", s1, "_", yr1, "-", yr2, "_Rho.png"),
+  width = 1080,
+  height = 600,
+  units = "px",
+  dpi = 96
+)
