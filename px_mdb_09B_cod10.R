@@ -1,12 +1,24 @@
 library(haven)
+library(readxl)
 source("fn_ungroup.R")
 
 # Extract data
-raw <- read_dta("../out/data/mdb_104_cod.dta")
+df1 <- read_csv("../out/data/who_mdb_09B.csv")
 
-# y: Death counts in the age group
-ph <-
-  raw %>%
+# Lookup file
+lkup <- read_excel("../docs/Data Description Table.xlsx",
+                   sheet = "09B") 
+
+colnames(lkup)[1] <- "icd9"
+
+lkup <-
+  lkup %>% 
+  select(icd9, cod10)
+
+# Lookup COD analysis group
+df2 <-
+  left_join(df1, lkup, by = join_by(Cause == icd9)) %>% 
+  filter(cod10 != 0) %>% 
   group_by(Year, Sex, cod10, agegrp) %>%
   summarize(ndeaths = sum(ndeaths)) %>% 
   ungroup() %>%
@@ -14,11 +26,11 @@ ph <-
 
 # "Ungroup" death counts
 ph1 <-
-  ph %>%
+  df2 %>%
   group_by(Year, Sex, cod10) %>%
   summarise(n = list(fn2(pick(ndeaths), 1, xlist)), .groups = "drop")
 
-write_csv(check_df, "../out/data/check_df10.csv")
+write_csv(check_df, "../out/data/check_df.csv")
 
 ph2 <-
   ph1 %>%
@@ -30,4 +42,4 @@ ph2 <-
   group_by(year, sex, age) %>%
   mutate(total = sum(n, na.rm = TRUE), px = n / total)
 
-write_dta(ph2, "../out/data/px_mdb_104_cod10.dta")
+write_dta(ph2, "../out/data/px_mdb_09B_cod10.dta")

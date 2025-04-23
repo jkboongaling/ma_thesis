@@ -48,14 +48,14 @@ replace cod5 = 5 if cod10 == 10
 
 lab def COD10 ///
 1 "Infectious diseases" ///
-2 "Cancer" ///
+2 "Neoplasms" ///
 3 "Diabetes" ///
 4 "Ischemic heart disease" ///
 5 "Stroke" ///
 6 "Other cardiovascular diseases" ///
 7 "Respiratory diseases" ///
 8 "Suicide" ///
-9 "Injuries" ///
+9 "Other external causes" ///
 10 "Others" 
 
 lab val cod10 COD10

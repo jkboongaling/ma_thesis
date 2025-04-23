@@ -79,3 +79,39 @@ fn1 <- function(df, fmt, list) {
   # Return fitted deaths
   return(z)
 }
+
+# Same as above but for 10 categories of CODs
+fn2 <- function(df, fmt, list) {
+  i <- fmt + 1
+  x <- list[[i]]
+  y <- df$ndeaths[2:25]
+  # Remove NA values
+  # Add 1e-10 to avoid errors due to zero values
+  y <- y[!is.na(y)] + 1e-10
+  # The pclm function performs the "ungrouping"
+  M1 <- pclm(x, y[1:length(x)], 101 - max(x))
+  z <- M1$fitted
+  # Check
+  a <- sum(df$ndeaths[2:25], na.rm = TRUE)
+  b <- round(sum(z), 1)
+  c <- round(b - a, 1)
+  d <- round(100 * c / a, 1)
+  # Output
+  group <- paste(cur_group(), collapse = " ")
+  print(paste(group, a, b, c, d, collapse = " "))
+  # Create a data frame for the current iteration
+  current_df <-
+    data.frame(
+      Year = cur_group()$Year,
+      Sex = cur_group()$Sex,
+      Cause = cur_group()$cod10,
+      Total = a,
+      Fitted = b,
+      Diff = c,
+      Pct = d
+    )
+  # Append the current data frame to the global check_df
+  check_df <<- rbind(check_df, current_df)
+  # Return fitted deaths
+  return(z)
+}
