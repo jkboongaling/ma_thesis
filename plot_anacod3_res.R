@@ -4,7 +4,7 @@ library(readxl)
 # Extract data
 df <- read_xlsx(
   "../docs/AnaCOD3 Results.xlsx",
-  range = "A3:J19",
+  range = "A3:J20",
   col_names = c(
     "year",
     "com_Male",
@@ -51,7 +51,7 @@ plot1 <-
   scale_y_continuous(expand = expansion(mult = c(0, 0.01)),
                      breaks = seq(0, 100, 10), 
                      limits = c(0,100)) +
-  scale_color_manual(values = c("blue", "red", "green")) +
+  scale_color_manual(values = c("#1f78b4", "#b2182b", "#33a02c")) +
   theme_bw() +
   theme(
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5),

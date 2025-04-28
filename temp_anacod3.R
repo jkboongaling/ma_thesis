@@ -101,7 +101,7 @@ ddf <-
 
 # Combine data
 ana <- rbind(pdf, ddf)
-write_csv(ana, "../out/data/temp_anacod3.csv")
+# write_csv(ana, "../out/data/temp_anacod3.csv")
 
 ana1 <-
   ana %>%
