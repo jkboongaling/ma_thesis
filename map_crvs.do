@@ -20,10 +20,12 @@ icd10 generate cvd_oth = cod, range(I00/I99)
 	replace cvd_oth = . if ischemic == 1 | stroke == 1
 icd10 generate respiratory = cod, range(J00/J99)
 icd10 generate suicide = cod, range(X60/X84)
-icd10 generate injuries_oth = cod, range(V01/Y98)
-	replace injuries_oth = . if suicide == 1
-
-gen cod10 = 10
+icd10 generate transport = cod, range(V01/V99)
+icd10 generate ext_oth = cod, range(V01/Y98)
+	replace ext_oth = . if suicide == 1 | transport == 1
+icd10 generate covid = cod, range(U071/U072)
+	
+gen cod10 = 12
 replace cod10 = 1 if infectious == 1
 replace cod10 = 2 if cancers == 1
 replace cod10 = 3 if diabetes == 1
@@ -32,7 +34,9 @@ replace cod10 = 5 if stroke == 1
 replace cod10 = 6 if cvd_oth == 1
 replace cod10 = 7 if respiratory == 1
 replace cod10 = 8 if suicide == 1
-replace cod10 = 9 if injuries_oth == 1
+replace cod10 = 9 if transport == 1
+replace cod10 = 10 if ext_oth == 1
+replace cod10 = 11 if covid == 1
 
 gen cod5 = .
 replace cod5 = 3 if cod10 == 1
@@ -44,19 +48,23 @@ replace cod5 = 1 if cod10 == 6
 replace cod5 = 5 if cod10 == 7
 replace cod5 = 4 if cod10 == 8
 replace cod5 = 4 if cod10 == 9
-replace cod5 = 5 if cod10 == 10
+replace cod5 = 4 if cod10 == 10
+replace cod5 = 5 if cod10 == 11
+replace cod5 = 5 if cod10 == 12
 
 lab def COD10 ///
-1 "Infectious diseases" ///
-2 "Neoplasms" ///
-3 "Diabetes" ///
-4 "Ischemic heart disease" ///
-5 "Stroke" ///
-6 "Other cardiovascular diseases" ///
-7 "Respiratory diseases" ///
-8 "Suicide" ///
-9 "Other external causes" ///
-10 "Others" 
+1  "Infectious diseases" ///
+2  "Neoplasms" ///
+3  "Diabetes" ///
+4  "Ischemic heart disease" ///
+5  "Stroke" ///
+6  "Other cardiovascular diseases" ///
+7  "Respiratory diseases" ///
+8  "Suicide" ///
+9  "Transport accidents" ///
+10 "Other external causes" ///
+11 "COVID-19" ///
+12 "Others" 
 
 lab val cod10 COD10
 
@@ -75,5 +83,5 @@ lab def SEX ///
 
 lab val sex SEX
 
-drop infectious - injuries_oth
+drop infectious - covid
 save "cod.dta", replace
