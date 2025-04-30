@@ -2,7 +2,6 @@ library(tidyverse)
 library(haven)
 library(kableExtra)
 library(scales)
-library(patchwork)
 
 options(scipen = 100000, digits = 4)
 
@@ -73,54 +72,37 @@ cod <-
   pivot_wider(names_from = cod10, values_from = px10) %>% 
   select(-any_of(levels(cod$cod10)), all_of(levels(cod$cod10)))
 
-# Inputs
-input_df <- 
-  tribble(~yr1, ~yr2, ~s1, ~brk,
-          1993, 2019, "Male", 1,
-          1993, 2023, "Male", 1,
-          1993, 2003, "Male", 2,
-          2003, 2013, "Male", 2,
-          2013, 2019, "Male", 2,
-          2019, 2021, "Male", 2,
-          2021, 2023, "Male", 2,
-          1993, 2019, "Female", 1,
-          1993, 2023, "Female", 1,
-          1993, 2003, "Female", 2,
-          2003, 2013, "Female", 2,
-          2013, 2019, "Female", 2,
-          2019, 2021, "Female", 2,
-          2021, 2023, "Female", 2
-  )
-
-input_df <-
-  input_df %>%
-  mutate(id = row_number())
+# Years of interest
+input_yrs <- c(1993, 2003, 2013, 2019, 2021, 2023)
 
 # Tables and plots
 plot <-
-  pmap(input_df, function(yr1, yr2, s1, brk, id) {
-    message("Running for ", s1, ": ", yr1, "-", yr2)
-    s2 <- tolower(substr(s1, 1, 1))
+  map(input_yrs, function(yr) {
+    message("Running for ", yr)
+    s1 <- "Male"
+    s2 <- "Female"
+    s3 <- tolower(substr(s1, 1, 1))
+    s4 <- tolower(substr(s2, 1, 1))
     
     lt1 <-
       lt %>%
-      filter(loc == 608, year == yr1, sex == s1) 
+      filter(loc == 608, year == yr, sex == s1) 
     
     lt2 <-
       lt %>%
-      filter(loc == 608, year == yr2, sex == s1) 
+      filter(loc == 608, year == yr, sex == s2) 
     
     ex_diff <- lt2$ex[1] - lt1$ex[1]
-    ex_decomp1 <- arriaga(lt1$mx, lt2$mx, sex = s2, breakdown = F)
+    ex_decomp1 <- arriaga2(lt1$mx, lt2$mx, s3, s4, breakdown = F)
     
     cause_prop1 <-
       cod %>% 
-      filter(year == yr1, sex == s1) %>% 
+      filter(year == yr, sex == s1) %>% 
       select(c(4:15))
     
     cause_prop2 <-
       cod %>% 
-      filter(year == yr2, sex == s1) %>% 
+      filter(year == yr, sex == s2) %>% 
       select(c(4:15))
     
     # Replace NAs (if any) with zero
@@ -136,10 +118,10 @@ plot <-
     # This simply copies values at age 98 to 99 & 100 for years using CRVS
     # At very old ages, it is very likely that there are multiple causes of death
     # so this is not very useful to interpret anyway.
-    if (yr1 >= 2006) {
+    if (yr >= 2006) {
       cause_prop1 <- bind_rows(cause_prop1, cause_prop1[99, ], cause_prop1[99, ])
     }
-    if (yr2 >= 2006) {
+    if (yr >= 2006) {
       cause_prop2 <- bind_rows(cause_prop2, cause_prop2[99, ], cause_prop2[99, ])
     }
     
@@ -153,7 +135,7 @@ plot <-
       ifelse((lt2$mx - lt1$mx) == 0, 1, lt2$mx - lt1$mx) * ex_decomp1
     
     # Same results as the Arriaga method by age
-    # sum(cause_fac2 - cause_fac1)
+    sum(cause_fac2 - cause_fac1)
     
     cause_mat <- cause_fac2 - cause_fac1
     
@@ -176,8 +158,8 @@ plot <-
         sum(cause_mat)), 2))
     
     row.names(table) <- c(
-      paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr2),
-      paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr1),
+      paste0("Life expectancy at birth for PH ", str_to_lower(s2), "s in ", yr),
+      paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr),
       "Life expectancy difference",
       "Infectious diseases",
       "Neoplasms",
@@ -192,7 +174,7 @@ plot <-
       "COVID-19",
       "Other causes",
       "Estimated total difference from decomposition")
-    colnames(table) <- paste0("PH ", s1, "s")
+    colnames(table) <- paste0("PH ", yr)
     print(kable(table, caption = "Arriaga Decomposition by Cause"))
     
     # Define age groups
@@ -257,20 +239,14 @@ plot <-
     )
     
     label_text <- paste0(
-      yr2, " e0 = ", format(round(lt2$ex[1], 1), nsmall = 1), "\n",
-      yr1, " e0 = ", format(round(lt1$ex[1], 1), nsmall = 1), "\n",
+      s2, " e0 = ", format(round(lt2$ex[1], 1), nsmall = 1), "\n",
+      s1, " e0 = ", format(round(lt1$ex[1], 1), nsmall = 1), "\n",
       "\u0394 = ", format(round(sum(ex_decomp1), 1), nsmall = 1)
     )
     
     # Breaks and limits
-    if (brk == 1) {
-      y_breaks <- seq(-0.3, 1.1, 0.1)
-      y_limits <- c(-0.3, 1.1)
-    } else {
-      y_breaks <- seq(-0.6, 0.7, 0.1)
-      y_limits <- c(-0.6, 0.7
-      )
-    }
+    y_breaks <- seq(-0.1, 0.8, 0.1)
+    y_limits <- c(-0.1, 0.8)
     
     p <-
       ggplot() +
@@ -302,23 +278,17 @@ plot <-
       ) +
       labs(
         title = paste0(
-          "Age- and cause-decomposition of the change in ",
-          str_to_lower(s1),
-          " life expectancy, Philippines ",
-          yr1,
-          "-",
-          yr2
-        ),
+          "Age- and cause-decomposition of the male-female life expectancy gap, Philippines ",
+          yr),
         x = "Age Group",
         y = "Contribution (in years)",
         fill = "Cause"
       )
     
     ggsave(
-      paste0("../out/fig/new/", str_pad(id, 2, pad = "0"), " PH_", s1, "_", yr1, "-", yr2, "_Decomposition.png"),
+      paste0("../out/fig/new/", yr, " PH_Male-Female_Decomposition.png"),
       plot = p,
       width = 12, height = 6, dpi = 300, bg = "white"
-      # width = 1080, height = 600, units = "px", dpi = 96, bg = "white"
     )
     
     return(p)
@@ -328,9 +298,9 @@ plot <-
 ################################################################################
 # Plots for manuscript
 
-# Age- and cause-decomposition of the change in life expectancy, Philippines 1993–2019
-pm1 <- plot[[1]] +
-  ggtitle("Males") +
+# Age- and cause-decomposition of the change in life expectancy, Philippines, 1993–2019
+p1 <- plot[[1]] +
+  ggtitle("1993") +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 12),
@@ -339,8 +309,8 @@ pm1 <- plot[[1]] +
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
   )
 
-pf1 <- plot[[8]] +
-  ggtitle("Females") +
+p2 <- plot[[6]] +
+  ggtitle("2023") +
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -350,80 +320,18 @@ pf1 <- plot[[8]] +
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
   )
 
-combined1 <- pm1 + plot_spacer() + pf1 +
+combined <- p1 + plot_spacer() + p2 +
   plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
   theme(
     axis.title.x = element_text(size = 12, margin = margin(t = 10)),
     legend.position = "right"
   )
 
-combined1
+combined
 
-# Age- and cause-decomposition of the change in life expectancy, Philippines 1993–2023
-pm2 <- plot[[2]] +
-  ggtitle("Males") +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(size = 12),
-    axis.text.y = element_text(size = 10),
-    legend.position = "none",
-    plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
-  )
-
-pf2 <- plot[[9]] +
-  ggtitle("Females") +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    legend.position = "none",
-    plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
-  )
-
-combined2 <- pm2 + plot_spacer() + pf2 +
-  plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
-  theme(
-    axis.title.x = element_text(size = 12, margin = margin(t = 10)),
-    legend.position = "right"
-  )
-
-combined2
-
-# Loop shortcut
-for (i in 1:7) {
-  pm <- plot[[i]] +
-    ggtitle("Males") +
-    theme(
-      axis.title.x = element_blank(),
-      axis.title.y = element_text(size = 12),
-      axis.text.y = element_text(size = 10),
-      legend.position = "none",
-      plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
-    )
-  
-  pf <- plot[[i + 7]] +
-    ggtitle("Females") +
-    theme(
-      axis.title.x = element_blank(),
-      axis.title.y = element_blank(),
-      axis.text.y = element_blank(),
-      axis.ticks.y = element_blank(),
-      legend.position = "none",
-      plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
-    )
-  
-  combined <- pm + plot_spacer() + pf +
-    plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
-    theme(
-      axis.title.x = element_text(size = 12, margin = margin(t = 10)),
-      legend.position = "right"
-    )
-  
-  ggsave(
-    paste0("../out/fig/new/combined/", str_pad(i, 2, pad = "0"), " PH_Decomposition_Combined.png"),
-    plot = combined, 
-    width = 12, height = 6, dpi = 300, bg = "white"
-  )
-}
+ggsave(
+  paste0("../out/fig/new/combined/", " PH_MF_Decomposition_Combined.png"),
+  plot = combined, 
+  width = 12, height = 6, dpi = 300, bg = "white"
+)
 

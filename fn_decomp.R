@@ -106,3 +106,50 @@ arriaga <- function(nmx1,nmx2,sex,breakdown=F){
   # the decomposition.
   return(delta)
 }
+
+# Same as above but allows comparison between sex
+arriaga2 <- function(nmx1,nmx2,sex1,sex2,breakdown=F){
+  LT1 <- life.table(nmx1,sex1)
+  LT2 <- life.table(nmx2,sex2)
+  # Creating the two life tables
+  lx1 <- LT1$lx
+  lx2 <- LT2$lx
+  Lx1 <- LT1$Lx
+  Lx2 <- LT2$Lx
+  Tx1 <- LT1$Tx
+  Tx2 <- LT2$Tx
+  # Specifying the life table statistics we
+  # need to perform the Arriaga decomposition.
+  if(breakdown==FALSE){
+    delta <- rep(0,101)
+    for (i in 1:100){
+      delta[i] <-
+        (lx1[i]/lx1[1])*(Lx2[i]/lx2[i]-Lx1[i]/lx1[i])+
+        (Tx2[i+1]/lx1[1])*(lx1[i]/lx2[i]-lx1[i+1]/lx2[i+1])
+      delta[101] <-
+        (lx1[101]/lx1[1])*(Tx2[101]/lx2[101]-Tx1[101]/lx1[101])
+    }
+  }
+  if(breakdown==T){
+    direct <- rep(0,101)
+    indirect <- rep(0,101)
+    for (i in 1:100){
+      direct[i] <-
+        (lx1[i]/lx1[1])*(Lx2[i]/lx2[i]-Lx1[i]/lx1[i])
+      direct[101] <-
+        (lx1[101]/lx1[1])*(Tx2[101]/lx2[101]-Tx1[101]/lx1[101])
+      indirect[i] <-
+        (Tx2[i+1]/lx1[1])*(lx1[i]/lx2[i]-lx1[i+1]/lx2[i+1])
+    }
+    delta <- data.frame(
+      age=0:100,
+      direct = direct,
+      indirect = indirect
+    )
+  }
+  # depends on whether you want to separate the direct and indirect
+  # effect, the "delta" results can either be a vector of contributions
+  # or a data.frame containing the direct and indirect components of
+  # the decomposition.
+  return(delta)
+}
