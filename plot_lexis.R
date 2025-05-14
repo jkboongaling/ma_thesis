@@ -90,11 +90,11 @@ summary(cod5_mode)
 # cpal5 <- qualitative_hcl(5, palette = "Dark 3")
 
 cpal5 <- c(
-  "Circulatory" = "#1B5E20",
-  "Neoplasm"    = "#8E24AA",
-  "Infection"   = "#8C564B",
-  "External"    = "#B71C1C",
-  "Others"      = "#0D47A1"
+  "Circulatory" = "#b2182b",
+  "Neoplasm"    = "#6a3d9a",
+  "Infection"   = "#33a02c",
+  "External"    = "#7b3f00",
+  "Others"      = "#008080"
 )
 
 breaks <- c(0.2, 0.4, 0.6, 0.8, 1)
@@ -155,9 +155,9 @@ pm <-
     lty = "dotted") +
   geom_vline(xintercept = c(2006),
              lty = "dashed",
-             color = "red") +
-  annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "red", vjust = 0) +
-  annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "red", vjust = 0) +
+             color = "black") +
+  # annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "black", vjust = 0) +
+  # annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "black", vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -199,9 +199,9 @@ pf <-
     lty = "dotted") +
   geom_vline(xintercept = c(2006),
              lty = "dashed",
-             color = "red") +
-  annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "red", vjust = 0) +
-  annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "red", vjust = 0) +
+             color = "black") +
+  # annotate("text", x = (2006+2023)/2, y = 105, label = "CRVS", color = "black", vjust = 0) +
+  # annotate("text", x = (1963+2006)/2, y = 105, label = "WHO", color = "black", vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -231,6 +231,7 @@ pl <-
   scale_x_continuous(
     breaks = 1:length(cpal5),
     labels = names(cpal5),
+    trans = "reverse",
     expand = c(0, 0)
   ) +
   scale_y_continuous(
@@ -238,30 +239,50 @@ pl <-
     labels = breaks * 100,
     expand = c(0, 0)
   ) +
-  coord_fixed(1.5) +
+  coord_flip() +
   theme_void() +
   theme(
-    axis.title.y = element_text(size = 9, angle = 90, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
     axis.text = element_text(colour = "black"),
-    axis.text.y = element_text(size = 8),
-    axis.text.x = element_text(
-      size = 8,
-      vjust = 0.5,
-      hjust = 1,
-      angle = 90
-    ),
-    plot.margin = margin(5)
+    axis.text.y = element_text(size = 12, hjust = 0, margin = margin(r = 10)),
+    axis.text.x = element_text(size = 12),
+    plot.margin = margin(10)
   )
 
 # Layout
 p1 <- pm + labs(title = "Males\n")
 p2 <- pf + labs(title = "Females\n")
 p3 <- pl + ylab("Proportion on all deaths\n")
+p3
 
 p1 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
 p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)
-p4 <- p1 | (p2 + inset_element(p3, 0.8, 0.35, 1.8, 0.6)) 
+p4 <- p1 | (p2 + inset_element(p3, 1.2, 0.35, 1.8, 0.65)) 
 p4 
 
-ggsave("../out/fig/PH_Lexis_cod_px.png", p4, width = 1080, height = 600, 
-       units = "px", dpi = 96)
+p5 <- p2 + inset_element(p3, 1.2, 0.35, 1.8, 0.65)
+p5
+
+ggsave(
+  paste0("../out/fig/new/combined/", "PH_Lexis_COD_MPx.png"),
+  plot = p1, 
+  width = 12, height = 6, dpi = 300, bg = "white"
+)
+
+ggsave(
+  paste0("../out/fig/new/combined/", "PH_Lexis_COD_FPx.png"),
+  plot = p2, 
+  width = 12, height = 6, dpi = 300, bg = "white"
+)
+
+ggsave(
+  paste0("../out/fig/new/combined/", "PH_Lexis_COD_FPx_Lab.png"),
+  plot = p5, 
+  width = 12, height = 6, dpi = 300, bg = "white"
+)
+
+ggsave(
+  paste0("../out/fig/new/combined/", "PH_Lexis_COD_Px.png"),
+  plot = p4, 
+  width = 12, height = 6, dpi = 300, bg = "white"
+)

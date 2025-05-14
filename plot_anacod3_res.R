@@ -63,8 +63,12 @@ plot1 <-
     plot.margin = margin(5)
   ) +
   labs(x = "Year", y = "Percent", color = "Sex",
-       caption = "Note: Computed from CRVS data using AnaCOD3 tool.")
+       caption = "Note: Computed from CRVS data using ANACoD3 tool.")
 
 plot1
-ggsave("../out/fig/anacod3_results.png", plot1, width = 1080, height = 600, 
-       units = "px", dpi = 96)
+
+ggsave(
+  paste0("../out/fig/new/combined/", "PH_ANACoD3_Results.png"),
+  plot = plot1, 
+  width = 12, height = 6, dpi = 300, bg = "white"
+)
