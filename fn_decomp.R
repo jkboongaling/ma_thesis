@@ -15,7 +15,7 @@ life.table<-function(mx,sex){
   # interval lived half of the year. A very common
   # assumption.
   if(sex=="m"){
-    ax[1]<-ifelse(mx[1]<0.107,0.045+mx[1]*2.684,0.330)}
+    ax[1]<-ifelse(mx[1]<0.107,0.045+2.684*mx[1],0.330)}
   if(sex=="f"){
     ax[1]<-ifelse(mx[1]<0.107,0.053+2.800*mx[1],0.350)
   }

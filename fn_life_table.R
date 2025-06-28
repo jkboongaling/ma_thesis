@@ -8,7 +8,7 @@ LifeTableMx <- function(mx, sex) {
   N <- length(mx)
   ax <- rep(0.5, N)
   if (sex == "Male") {
-    ax[1] <- ifelse(mx[1] < 0.107, 0.045 + mx[1] * 2.684, 0.330)
+    ax[1] <- ifelse(mx[1] < 0.107, 0.045 + 2.684 * mx[1], 0.330)
   }
   if (sex == "Female") {
     ax[1] <- ifelse(mx[1] < 0.107, 0.053 + 2.800 * mx[1], 0.350)
