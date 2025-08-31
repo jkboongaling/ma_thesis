@@ -94,6 +94,7 @@ plot <-
     
     ex_diff <- lt2$ex[1] - lt1$ex[1]
     ex_decomp1 <- arriaga2(lt1$mx, lt2$mx, s3, s4, breakdown = F)
+    ex_decomp2 <- arriaga2(lt1$mx, lt2$mx, s3, s4, breakdown = T)
     
     cause_prop1 <-
       cod %>% 
@@ -143,6 +144,8 @@ plot <-
       c(lt2$ex[1],
         lt1$ex[1],
         sum(ex_decomp1),
+        sum(ex_decomp2$direct),
+        sum(ex_decomp2$indirect),
         sum(cause_mat[,1]),
         sum(cause_mat[,2]),
         sum(cause_mat[,3]),
@@ -161,6 +164,8 @@ plot <-
       paste0("Life expectancy at birth for PH ", str_to_lower(s2), "s in ", yr),
       paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr),
       "Life expectancy difference",
+      "Direct component",
+      "Indirect and interaction component",
       "Infectious diseases",
       "Neoplasms",
       "Diabetes",
@@ -301,7 +306,7 @@ plot <-
       )
     
     ggsave(
-      paste0("../out/fig/new/", yr, " PH_Male-Female_Decomposition.png"),
+      paste0("../out/fig/final/", yr, " PH_Male-Female_Decomposition.png"),
       plot = p,
       width = 12, height = 6, dpi = 300, bg = "white"
     )
@@ -345,7 +350,7 @@ combined <- p1 + plot_spacer() + p2 +
 combined
 
 ggsave(
-  paste0("../out/fig/new/combined/", " PH_MF_Decomposition_Combined.png"),
+  paste0("../out/fig/final/combined/", " PH_MF_Decomposition_Combined.png"),
   plot = combined, 
   width = 12, height = 6, dpi = 300, bg = "white"
 )

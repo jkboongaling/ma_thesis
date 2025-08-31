@@ -144,20 +144,21 @@ pm <-
   )) +
   # Lexis grid and theme
   geom_hline(yintercept = seq(0, 100, 10),
-             alpha = 0.2,
+             alpha = 0.8,
              lty = "dotted") +
   geom_vline(xintercept = seq(1960, 2020, 10),
-             alpha = 0.2,
+             alpha = 0.8,
              lty = "dotted") +
   geom_abline(
     intercept = seq(-100, 100, 10) - 1960,
-    alpha = 0.2,
+    alpha = 0.8,
     lty = "dotted") +
   geom_vline(xintercept = c(2006),
              lty = "dashed",
-             color = "black") +
-  # annotate("text", x = (2006+2023)/2, y = 50, label = "PSA CRVS", color = "black", vjust = 0) +
-  # annotate("text", x = (1963+2006)/2, y = 50, label = "WHO MDB", color = "black", vjust = 0) +
+             color = "black",
+             size = 0.8) +
+  annotate("text", x = (2006+2023)/2, y = 50, label = "CRVS", color = "black", fontface = "bold", size = 4, vjust = 0) +
+  annotate("text", x = (1963+2006)/2, y = 50, label = "WHOMD", color = "black", fontface = "bold", size = 4, vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -188,20 +189,21 @@ pf <-
   )) +
   # Lexis grid and theme
   geom_hline(yintercept = seq(0, 100, 10),
-             alpha = 0.2,
+             alpha = 0.5,
              lty = "dotted") +
   geom_vline(xintercept = seq(1960, 2020, 10),
-             alpha = 0.2,
+             alpha = 0.5,
              lty = "dotted") +
   geom_abline(
     intercept = seq(-100, 100, 10) - 1960,
-    alpha = 0.2,
+    alpha = 0.5,
     lty = "dotted") +
   geom_vline(xintercept = c(2006),
              lty = "dashed",
-             color = "black") +
-  # annotate("text", x = (2006+2023)/2, y = 105, label = "CRVS", color = "black", vjust = 0) +
-  # annotate("text", x = (1963+2006)/2, y = 105, label = "WHO", color = "black", vjust = 0) +
+             color = "black",
+             size = 0.8) +
+  annotate("text", x = (2006+2023)/2, y = 50, label = "CRVS", color = "black", fontface = "bold", size = 4, vjust = 0) +
+  annotate("text", x = (1963+2006)/2, y = 50, label = "WHOMD", color = "black", fontface = "bold", size = 4, vjust = 0) +
   scale_fill_identity() +
   scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
   scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -242,12 +244,15 @@ pl <-
   coord_flip() +
   theme_void() +
   theme(
-    axis.title.x = element_text(size = 12, face = "bold"),
+    # axis.title.x = element_text(size = 12, face = "bold"),
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    axis.title.x = element_blank(),
     axis.text = element_text(colour = "black"),
-    axis.text.y = element_text(size = 12, hjust = 0, margin = margin(r = 10)),
-    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 10, hjust = 0, margin = margin(r = 10)),
+    axis.text.x = element_text(size = 10),
     plot.margin = margin(10)
-  )
+  ) +
+  labs(title = "Proportion on all deaths\n")
 
 # Layout
 p1 <- pm + labs(title = "Males\n")
@@ -263,26 +268,14 @@ p4
 p5 <- p2 + inset_element(p3, 1.2, 0.35, 1.8, 0.65)
 p5
 
+combined <- p1 + plot_spacer() + p2 + plot_spacer() + 
+  plot_layout(ncol = 4, widths = c(1, 0.01, 1, 0.7))
+combined <- combined + inset_element(p3, 0.1, 0.3, 0.8, 0.7)
+combined
+
 ggsave(
-  paste0("../out/fig/new/combined/", "PH_Lexis_COD_MPx.png"),
-  plot = p1, 
+  paste0("../out/fig/final/", "PH_Lexis_COD_CRVS.png"),
+  plot = combined, 
   width = 12, height = 6, dpi = 300, bg = "white"
 )
 
-ggsave(
-  paste0("../out/fig/new/combined/", "PH_Lexis_COD_FPx.png"),
-  plot = p2, 
-  width = 12, height = 6, dpi = 300, bg = "white"
-)
-
-ggsave(
-  paste0("../out/fig/new/combined/", "PH_Lexis_COD_FPx_Lab.png"),
-  plot = p5, 
-  width = 12, height = 6, dpi = 300, bg = "white"
-)
-
-ggsave(
-  paste0("../out/fig/new/combined/", "PH_Lexis_COD_Px.png"),
-  plot = p4, 
-  width = 12, height = 6, dpi = 300, bg = "white"
-)

@@ -2,13 +2,14 @@ library(tidyverse)
 library(haven)
 library(kableExtra)
 library(scales)
+library(patchwork)
 
 options(scipen = 100000, digits = 4)
 
 ################################################################################
-# Data preparation
+# Prepare cause-specific mortality data
 
-# Extract crvs data
+# Extract data
 df1 <- read_dta("../out/data/cod.dta")
 df2 <- read_dta("../out/data/px_mdb_104_cod10.dta")
 df3 <- read_dta("../out/data/px_mdb_09B_cod10.dta")
@@ -60,7 +61,7 @@ write_csv(cod10, "../out/data/cod10.csv")
 
 ################################################################################
 
-# LE Decomposition (Cause)
+# LE Decomposition
 
 source("fn_decomp.R")
 
@@ -72,37 +73,56 @@ cod <-
   pivot_wider(names_from = cod10, values_from = px10) %>% 
   select(-any_of(levels(cod$cod10)), all_of(levels(cod$cod10)))
 
-# Years of interest
-input_yrs <- c(1993, 2003, 2013, 2019, 2021, 2023)
+# Inputs
+# All decomposition configurations  are listed in input_df
+input_df <- 
+  tribble(~yr1, ~yr2, ~s1, ~brk,
+          1993, 2023, "Male", 1,
+          1993, 2003, "Male", 2,
+          2003, 2013, "Male", 2,
+          2013, 2023, "Male", 2,
+          2013, 2019, "Male", 2,
+          2019, 2021, "Male", 2,
+          2021, 2023, "Male", 2,
+          1993, 2023, "Female", 1,
+          1993, 2003, "Female", 2,
+          2003, 2013, "Female", 2,
+          2013, 2023, "Female", 2,
+          2013, 2019, "Female", 2,
+          2019, 2021, "Female", 2,
+          2021, 2023, "Female", 2
+  )
 
-# Tables and plots
+input_df <-
+  input_df %>%
+  mutate(id = row_number())
+
+# Decomposition including result tables and plots
 plot <-
-  map(input_yrs, function(yr) {
-    message("Running for ", yr)
-    s1 <- "Male"
-    s2 <- "Female"
-    s3 <- tolower(substr(s1, 1, 1))
-    s4 <- tolower(substr(s2, 1, 1))
+  pmap(input_df, function(yr1, yr2, s1, brk, id) {
+    message("Running for ", s1, ": ", yr1, "-", yr2)
+    s2 <- tolower(substr(s1, 1, 1))
     
     lt1 <-
       lt %>%
-      filter(loc == 608, year == yr, sex == s1) 
+      filter(loc == 608, year == yr1, sex == s1) 
     
     lt2 <-
       lt %>%
-      filter(loc == 608, year == yr, sex == s2) 
+      filter(loc == 608, year == yr2, sex == s1) 
     
     ex_diff <- lt2$ex[1] - lt1$ex[1]
-    ex_decomp1 <- arriaga2(lt1$mx, lt2$mx, s3, s4, breakdown = F)
+    ex_decomp1 <- arriaga(lt1$mx, lt2$mx, sex = s2, breakdown = F)
+    ex_decomp2 <- arriaga(lt1$mx, lt2$mx, sex = s2, breakdown = T)
     
     cause_prop1 <-
       cod %>% 
-      filter(year == yr, sex == s1) %>% 
+      filter(year == yr1, sex == s1) %>% 
       select(c(4:15))
     
     cause_prop2 <-
       cod %>% 
-      filter(year == yr, sex == s2) %>% 
+      filter(year == yr2, sex == s1) %>% 
       select(c(4:15))
     
     # Replace NAs (if any) with zero
@@ -118,10 +138,10 @@ plot <-
     # This simply copies values at age 98 to 99 & 100 for years using CRVS
     # At very old ages, it is very likely that there are multiple causes of death
     # so this is not very useful to interpret anyway.
-    if (yr >= 2006) {
+    if (yr1 >= 2006) {
       cause_prop1 <- bind_rows(cause_prop1, cause_prop1[99, ], cause_prop1[99, ])
     }
-    if (yr >= 2006) {
+    if (yr2 >= 2006) {
       cause_prop2 <- bind_rows(cause_prop2, cause_prop2[99, ], cause_prop2[99, ])
     }
     
@@ -135,14 +155,35 @@ plot <-
       ifelse((lt2$mx - lt1$mx) == 0, 1, lt2$mx - lt1$mx) * ex_decomp1
     
     # Same results as the Arriaga method by age
-    sum(cause_fac2 - cause_fac1)
+    # sum(cause_fac2 - cause_fac1)
     
     cause_mat <- cause_fac2 - cause_fac1
     
+    # Create results table and save in a csv
+    # Convert data to data frames
+    lt1_mx_df <- data.frame(lt1_mx = lt1$mx)
+    lt2_mx_df <- data.frame(lt2_mx = lt2$mx)
+    cause_prop1_df <- setNames(as.data.frame(cause_prop1), paste0("cause1_", 1:12))
+    cause_prop2_df <- setNames(as.data.frame(cause_prop2), paste0("cause2_", 1:12))
+    ex_decomp_df   <- data.frame(ex_decomp = ex_decomp1)
+    cause_mat_df   <- setNames(as.data.frame(cause_mat), paste0("causemat_", 1:12))
+    
+    # Combine all into one data frame
+    combined_df <- data.frame(age = 0:100) %>%
+      bind_cols(lt1_mx_df, cause_prop1_df, lt2_mx_df, cause_prop2_df, ex_decomp_df, cause_mat_df) %>%
+      mutate(across(-age, ~ format(round(as.numeric(.x), 5), scientific = FALSE, trim = TRUE)))
+    
+    # Save to CSV
+    file_name <- paste0("../out/data/decomp/age/PH_", s1, "_", yr1, "_", yr2, "_decomp.csv")
+    write_csv(combined_df, file_name)
+    
+    # Create a summary table in the console
     table <- matrix(round(
       c(lt2$ex[1],
         lt1$ex[1],
         sum(ex_decomp1),
+        sum(ex_decomp2$direct),
+        sum(ex_decomp2$indirect),
         sum(cause_mat[,1]),
         sum(cause_mat[,2]),
         sum(cause_mat[,3]),
@@ -158,9 +199,11 @@ plot <-
         sum(cause_mat)), 2))
     
     row.names(table) <- c(
-      paste0("Life expectancy at birth for PH ", str_to_lower(s2), "s in ", yr),
-      paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr),
+      paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr2),
+      paste0("Life expectancy at birth for PH ", str_to_lower(s1), "s in ", yr1),
       "Life expectancy difference",
+      "Direct component",
+      "Indirect and interaction component",
       "Infectious diseases",
       "Neoplasms",
       "Diabetes",
@@ -174,7 +217,7 @@ plot <-
       "COVID-19",
       "Other causes",
       "Estimated total difference from decomposition")
-    colnames(table) <- paste0("PH ", yr)
+    colnames(table) <- paste0("PH ", s1, "s")
     print(kable(table, caption = "Arriaga Decomposition by Cause"))
     
     # Define age groups
@@ -235,8 +278,10 @@ plot <-
     # Write to CSV
     write_csv(
       combined_contrib,
-      paste0("../out/data/decomp/agegrp/PH_Male_Female_", yr, "_decomp_grp.csv")
+      paste0("../out/data/decomp/agegrp/PH_", s1, "_", yr1, "_", yr2, "_decomp_grp.csv")
     )
+    
+    
     
     cause_colors <- c(
       "Infectious diseases"              = "#33a02c", 
@@ -254,14 +299,20 @@ plot <-
     )
     
     label_text <- paste0(
-      s2, " e0 = ", format(round(lt2$ex[1], 1), nsmall = 1), "\n",
-      s1, " e0 = ", format(round(lt1$ex[1], 1), nsmall = 1), "\n",
+      yr2, " e0 = ", format(round(lt2$ex[1], 1), nsmall = 1), "\n",
+      yr1, " e0 = ", format(round(lt1$ex[1], 1), nsmall = 1), "\n",
       "\u0394 = ", format(round(sum(ex_decomp1), 1), nsmall = 1)
     )
     
     # Breaks and limits
-    y_breaks <- seq(-0.1, 0.8, 0.1)
-    y_limits <- c(-0.1, 0.8)
+    if (brk == 1) {
+      y_breaks <- seq(-0.3, 1.1, 0.1)
+      y_limits <- c(-0.3, 1.1)
+    } else {
+      y_breaks <- seq(-0.6, 0.7, 0.1)
+      y_limits <- c(-0.6, 0.7
+      )
+    }
     
     p <-
       ggplot() +
@@ -293,15 +344,21 @@ plot <-
       ) +
       labs(
         title = paste0(
-          "Age- and cause-decomposition of the male-female life expectancy gap, Philippines ",
-          yr),
+          "Age- and cause-decomposition of the change in ",
+          str_to_lower(s1),
+          " life expectancy, Philippines ",
+          yr1,
+          "-",
+          yr2
+        ),
         x = "Age Group",
         y = "Contribution (in years)",
         fill = "Cause"
       )
     
     ggsave(
-      paste0("../out/fig/new/", yr, " PH_Male-Female_Decomposition.png"),
+      paste0("../out/fig/new2/", str_pad(id, 2, pad = "0"), 
+             " PH_", s1, "_", yr1, "-", yr2, "_Decomposition.png"),
       plot = p,
       width = 12, height = 6, dpi = 300, bg = "white"
     )
@@ -313,9 +370,8 @@ plot <-
 ################################################################################
 # Plots for manuscript
 
-# Age- and cause-decomposition of the change in life expectancy, Philippines, 1993–2019
-p1 <- plot[[1]] +
-  ggtitle("1993") +
+# Common themes
+m_theme <-
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_text(size = 12),
@@ -324,8 +380,7 @@ p1 <- plot[[1]] +
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
   )
 
-p2 <- plot[[6]] +
-  ggtitle("2023") +
+f_theme <-
   theme(
     axis.title.x = element_blank(),
     axis.title.y = element_blank(),
@@ -335,18 +390,155 @@ p2 <- plot[[6]] +
     plot.title = element_text(size = 12, face = "bold", hjust = 0.5)
   )
 
-combined <- p1 + plot_spacer() + p2 +
-  plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
-  theme(
-    axis.title.x = element_text(size = 12, margin = margin(t = 10)),
-    legend.position = "right"
-  )
+r_theme <-
+  theme(axis.title.x = element_text(size = 12, margin = margin(t = 10)),
+        legend.position = "right")
 
-combined
+b_theme <-
+  theme(axis.title.x = element_text(size = 12, margin = margin(t = 10)),
+        legend.position = "bottom")
+
+no_x_theme <-
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank())
+
+# Age- and cause-decomposition of the change in life expectancy
+# Philippines 1993–2019
+pm1 <- plot[[1]] + ggtitle("Males") + m_theme
+pf1 <- plot[[8]] + ggtitle("Females") + f_theme
+
+combined1 <- pm1 + plot_spacer() + pf1 +
+  plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
+  r_theme
+
+combined1
+
+# Age- and cause-decomposition of the change in life expectancy
+# Philippines 1993–2023
+pm2 <- plot[[2]] + ggtitle("Males") + m_theme
+pf2 <- plot[[9]] + ggtitle("Females") + f_theme
+
+combined2 <- pm2 + plot_spacer() + pf2 +
+  plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
+  r_theme
+
+combined2
+
+# Loop shortcut
+for (i in 1:7) {
+  pm <- plot[[i]] + ggtitle("Males") + m_theme
+  pf <- plot[[i + 7]] + ggtitle("Females") + f_theme
+  
+  combined <- pm + plot_spacer() + pf +
+    plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
+    r_theme
+  
+  ggsave(
+    paste0(
+      "../out/fig/new2/combined/",
+      str_pad(i, 2, pad = "0"),
+      " PH_Decomposition_Combined.png"
+    ),
+    plot = combined,
+    width = 12,
+    height = 6,
+    dpi = 300,
+    bg = "white"
+  )
+  
+  combined <- pm + plot_spacer() + pf +
+    plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
+    b_theme
+  
+  ggsave(
+    paste0(
+      "../out/fig/new2/combined/manu/",
+      str_pad(i, 2, pad = "0"),
+      " PH_Decomposition_Combined.png"
+    ),
+    plot = combined,
+    width = 12,
+    height = 6,
+    dpi = 300,
+    bg = "white"
+  )
+}
+
+################################################################################
+# Can remove beyond this!
+# Age- and cause-decomposition of the change in life expectancy
+# Philippines 1993–2023
+# Selected pre-pandemic intervals
+pm3 <- plot[[3]] + ggtitle("Males") + m_theme + no_x_theme
+pf3 <- plot[[3 + 7]] + ggtitle("Females") + f_theme + no_x_theme
+pm4 <- plot[[4]] + ggtitle("") + m_theme + no_x_theme
+pf4 <- plot[[4 + 7]] + ggtitle("") + f_theme + no_x_theme
+pm5 <- plot[[5]] + ggtitle("") + m_theme
+pf5 <- plot[[5 + 7]] + ggtitle("") + f_theme
+
+
+combined3 <- 
+  pm3 + plot_spacer() + pf3 +
+  pm4 + plot_spacer() + pf4 +
+  pm5 + plot_spacer() + pf5 +
+  plot_layout(ncol = 3, widths = c(1, 0.01, 1), guides = "collect") &
+  b_theme
+
+combined3
 
 ggsave(
-  paste0("../out/fig/new/combined/", " PH_MF_Decomposition_Combined.png"),
-  plot = combined, 
-  width = 12, height = 6, dpi = 300, bg = "white"
+  paste0(
+    "../out/fig/new2/combined/manu/",
+    " PH_Decomposition_Combined_Prepandemic.png"
+  ),
+  plot = combined3,
+  width = 12,
+  height = 18,
+  dpi = 300,
+  bg = "white"
+)
+
+# Selected pandemic intervals
+library(grid)
+# Define row period labels as grobs
+label_2019_2021 <- wrap_elements(full = textGrob("2019–2021", rot = 90, gp = gpar(fontsize = 14)))
+label_2021_2023 <- wrap_elements(full = textGrob("2021–2023", rot = 90, gp = gpar(fontsize = 14)))
+
+pm6 <- plot[[6]] + ggtitle("Males") + m_theme + no_x_theme
+pf6 <- plot[[6 + 7]] + ggtitle("Females") + f_theme + no_x_theme
+pm7 <- plot[[7]] + ggtitle("") + m_theme
+pf7 <- plot[[7 + 7]] + ggtitle("") + f_theme
+
+combined4 <- 
+  label_2019_2021 + pm6 + plot_spacer() + pf6 +
+  label_2021_2023 + pm7 + plot_spacer() + pf7 +
+  plot_layout(ncol = 4, widths = c(0.01, 1, 0.01, 1), guides = "collect") &
+  b_theme
+
+combined4
+
+# Row 1: 2019–2021
+row1 <- label_2019_2021 + pm6 + plot_spacer() + pf6 +
+  plot_layout(ncol = 4, widths = c(0.1, 1, 0.01, 1))
+
+# Row 2: 2021–2023
+row2 <- label_2021_2023 + pm7 + plot_spacer() + pf7 +
+  plot_layout(ncol = 4, widths = c(0.1, 1, 0.01, 1))
+
+# Combine both rows into final layout
+combined4 <- row1 / row2 + 
+  plot_layout(heights = c(1, 1), guides = "collect") & 
+  b_theme
+
+ggsave(
+  paste0(
+    "../out/fig/new2/combined/manu/",
+    " PH_Decomposition_Combined_Postpandemic.png"
+  ),
+  plot = combined4,
+  width = 12,
+  height = 30,
+  dpi = 300,
+  bg = "white"
 )
 
