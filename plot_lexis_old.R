@@ -144,19 +144,19 @@ pm <-
   )) +
   # Lexis grid and theme
   geom_hline(yintercept = seq(0, 100, 10),
-             alpha = 0.8,
+             alpha = 0.5,
              lty = "dotted") +
   geom_vline(xintercept = seq(1960, 2020, 10),
-             alpha = 0.8,
+             alpha = 0.5,
              lty = "dotted") +
   geom_abline(
     intercept = seq(-100, 100, 10) - 1960,
-    alpha = 0.8,
+    alpha = 0.5,
     lty = "dotted") +
   geom_vline(xintercept = c(2006),
              lty = "dashed",
              color = "black",
-             size = 0.8) +
+             size = 0.5) +
   annotate("text", x = (2006+2023)/2, y = 50, label = "CRVS", color = "black", fontface = "bold", size = 4, vjust = 0) +
   annotate("text", x = (1963+2006)/2, y = 50, label = "WHOMD", color = "black", fontface = "bold", size = 4, vjust = 0) +
   scale_fill_identity() +
@@ -169,8 +169,10 @@ pm <-
     axis.text = element_text(colour = "black"),
     axis.text.y = element_text(margin = margin(r = 10)),
     axis.text.x = element_text(margin = margin(t = 10)),
-    plot.margin = margin(5)
-  )
+    plot.margin = margin(5),
+    axis.title.y = element_text(size = 12, angle = 90, vjust = 0.5, margin = margin(r = 10))
+  ) +
+  labs(y = "Age")
 
 # Females
 pf <-

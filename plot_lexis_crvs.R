@@ -10,6 +10,21 @@ library(patchwork)
 ################################################################################
 # Helper functions
 
+# Prep function
+prep_df <- function(df, label_cod = FALSE) {
+  df <- df %>%
+    mutate(sex = as_factor(sex), cod5 = as_factor(cod5))
+  levels(df$sex) <- c("Male", "Female")
+  if (label_cod) {
+    levels(df$cod5) <- c("Circulatory",
+                         "Neoplasm",
+                         "Infection",
+                         "External",
+                         "Others")
+  }
+  return(df)
+}
+
 # Color mixing function (LAB space alpha blending)
 MixWithWhite <- function(.rgb, .alpha) {
   result <- mixcolor(.alpha, sRGB(1, 1, 1), hex2RGB(.rgb), where = "LAB")
@@ -17,15 +32,18 @@ MixWithWhite <- function(.rgb, .alpha) {
 }
 
 # Lexis surface plot for one sex
-create_lexis_plot <- function(data, mf, code) {
+create_lexis_plot <- function(data, mf) {
   data %>%
-    filter(sex == mf, loc == code) %>%
+    filter(sex == mf) %>%
     mutate(year = year + 0.5, age = age + 0.5) %>%
     ggplot() +
     geom_tile(aes(x = year, y = age, fill = mix_col, width = 1, height = 1)) +
     geom_hline(yintercept = seq(0, 100, 10), alpha = 0.5, lty = "dotted") +
     geom_vline(xintercept = seq(1960, 2020, 10), alpha = 0.5, lty = "dotted") +
     geom_abline(intercept = seq(-100, 100, 10) - 1960, alpha = 0.5, lty = "dotted") +
+    geom_vline(xintercept = 2006, lty = "dashed", color = "black", size = 0.5) +
+    annotate("text", x = (2006 + 2023) / 2, y = 50, label = "CRVS", color = "black", fontface = "bold", size = 4, vjust = 0) +
+    annotate("text", x = (1963 + 2006) / 2, y = 50, label = "WHOMD", color = "black", fontface = "bold", size = 4, vjust = 0) +
     scale_fill_identity() +
     scale_x_continuous(expand = c(0, 0), breaks = seq(1960, 2020, 10)) +
     scale_y_continuous(expand = c(0, 0), breaks = seq(0, 100, 10)) +
@@ -74,29 +92,27 @@ create_legend_plot <- function(cpal5, alphas, breaks) {
 
 ################################################################################
 # Extract and prepare data
-df <- read_csv("../out/data/gbd_cod5.csv")
+df1 <- read_dta("../out/data/cod.dta") %>%
+  select(year, sex, age, cod5, n, total, px) %>%
+  prep_df()
 
-cod <- df %>% 
-  select(loc, year, sex, age, cod5, n, total, px) %>%
-  mutate(
-    loc = factor(loc, labels = c("SEA", "PH")),
-    sex = factor(sex, labels = c("Male", "Female")),
-    cod5 = factor(
-      cod5,
-      labels = c("Circulatory", "Neoplasm", "Infection", "External", "Others")
-    )
-  )
+df2 <- read_dta("../out/data/px_mdb_104_cod5.dta") %>% prep_df()
+df3 <- read_dta("../out/data/px_mdb_09B_cod5.dta") %>% prep_df(label_cod = TRUE)
+df4 <- read_dta("../out/data/px_mdb_08A_cod5.dta") %>% prep_df(label_cod = TRUE)
+df5 <- read_dta("../out/data/px_mdb_07A_cod5.dta") %>% prep_df(label_cod = TRUE)
+
+cod <- bind_rows(df1, df2, df3, df4, df5)
 
 # Collapse to COD5 groups
 cod5 <- cod %>%
-  group_by(loc, year, sex, age, cod5) %>%
+  group_by(year, sex, age, cod5) %>%
   summarise(px5 = sum(px), .groups = "drop")
 
-write_csv(cod5, "../out/data/cod5_gbd.csv")
+write_csv(cod5, "../out/data/cod5.csv")
 
 # Identify modal CODs
 cod5_mode <- cod5 %>%
-  group_by(loc, year, sex, age) %>%
+  group_by(year, sex, age) %>%
   filter(px5 == max(px5)) %>%
   ungroup()
 
@@ -121,12 +137,12 @@ cod5_mode_mix <- cod5_mode %>%
   )
 
 # Plots
-plotm <- create_lexis_plot(cod5_mode_mix, "Male", "PH") +
+plotm <- create_lexis_plot(cod5_mode_mix, "Male") +
   theme(
     axis.title.y = element_text(size = 12, angle = 90, vjust = 0.5, margin = margin(r = 10)),
   ) +
   labs(y = "Age")
-plotf <- create_lexis_plot(cod5_mode_mix, "Female", "PH")
+plotf <- create_lexis_plot(cod5_mode_mix, "Female")
 plotl <- create_legend_plot(cpal5, alphas, breaks)
 
 # Combined layout
@@ -137,7 +153,7 @@ combined
 
 # Save output
 ggsave(
-  "../out/fig/final/PH_Lexis_COD_GBD.png",
+  "../out/fig/final/PH_Lexis_COD_CRVS.png",
   plot = combined,
   width = 12, height = 6, dpi = 300, bg = "white"
 )
