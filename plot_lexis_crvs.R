@@ -158,3 +158,50 @@ ggsave(
   width = 12, height = 6, dpi = 300, bg = "white"
 )
 
+################################################################################
+# Annotated plots
+
+poly_df <- 
+  data.frame(
+    year = c(1990, 2000, 2010, 2000, 
+             2000, 2010, 2020, 2010,
+             2010, 2020, 2023.8, 2023.8),
+    age = c(20, 20, 30, 30,
+            30, 30, 40, 40,
+            40, 40, 43.8, 53.8),
+    group = rep(1:3, each = 4)
+  )
+
+plotm1 <- plotm +
+  geom_polygon(
+    data = poly_df,
+    aes(x = year, y = age, group = group),
+    color = "red", fill = NA, linewidth = 0.5
+  ) +
+  annotate("text", x = c(1999, 2009, 2019), y = c(25, 35, 44), 
+           label = c("a", "b", "c"), 
+           color = "red", size = 4, fontface = "bold", vjust = 0.5)
+
+plotf1 <- plotf +
+  geom_polygon(
+    data = poly_df,
+    aes(x = year, y = age, group = group),
+    color = "red", fill = NA, linewidth = 0.5
+  ) +
+  annotate("text", x = c(1999, 2009, 2019), y = c(25, 35, 44), 
+           label = c("d", "e", "f"), 
+           color = "red", size = 4, fontface = "bold", vjust = 0.5)
+
+# Combined layout
+combined <- (plotm1 | plot_spacer() | plotf1 | plot_spacer()) +
+  plot_layout(ncol = 4, widths = c(1, 0.01, 1, 0.7)) +
+  inset_element(plotl, 0.1, 0.3, 0.8, 0.7)
+combined
+
+# Save output
+ggsave(
+  "../out/fig/final/PH_Lexis_COD_CRVS_x.png",
+  plot = combined,
+  width = 12, height = 6, dpi = 300, bg = "white"
+)
+
